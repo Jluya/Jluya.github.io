@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+  <meta name="author" content="Seven Ju">
+
+
+
+
+
+<title>A Comparative Analysis of Port Scanning Tool Efficacy | Seven&#39;s Blog</title>
+
+
+
+<link rel="icon" href="/favicon.png">
+
+
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/nprogress/nprogress.css">
+
+
+
+<script src="/lib/jquery.min.js"></script>
+
+
+<script src="/lib/iconify-icon.min.js"></script>
+
+
+<script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+  };
+</script>
+
+
+<script src="/lib/nprogress/nprogress.js"></script>
+
+<script>
+  $(document).ready(() => {
+    NProgress.configure({
+      showSpinner: false,
+    });
+    NProgress.start();
+    $("#nprogress .bar").css({
+      background: "#de7441",
+    });
+    $("#nprogress .peg").css({
+      "box-shadow": "0 0 2px #de7441, 0 0 4px #de7441",
+    });
+    $("#nprogress .spinner-icon").css({
+      "border-top-color": "#de7441",
+      "border-left-color": "#de7441",
+    });
+    setTimeout(function () {
+      NProgress.done();
+      $(".fade").removeClass("out");
+    }, 800);
+  });
+</script>
+
+<script>
+  (function () {
+    const prefersDark =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const setting = localStorage.getItem("hexo-color-scheme") || "auto";
+    if (setting === "dark" || (prefersDark && setting !== "light"))
+      document.documentElement.classList.toggle("dark", true);
+    let isDark = document.documentElement.classList.contains("dark");
+  })();
+
+  $(document).ready(function () {
+    // init icon
+    const prefersDark =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = document.documentElement.classList.contains("dark");
+    $("#theme-icon").attr("icon", isDark ? "ri:moon-line" : "ri:sun-line");
+
+    function toggleGiscusTheme() {
+      const isDark = document.documentElement.classList.contains("dark");
+      const giscusFrame = document.querySelector("iframe.giscus-frame");
+      if (giscusFrame) {
+        giscusFrame.contentWindow.postMessage(
+          {
+            giscus: {
+              setConfig: {
+                theme: isDark ? "dark" : "light",
+              },
+            },
+          },
+          "https://giscus.app"
+        );
+      }
+    }
+
+
+    // toggle dark mode
+    function toggleDark() {
+      let isDark = document.documentElement.classList.contains("dark");
+      isDark = !isDark;
+      const setting = localStorage.getItem("hexo-color-scheme") || "auto";
+      document.documentElement.classList.toggle("dark", isDark);
+      $("#theme-icon").attr("icon", isDark ? "ri:moon-line" : "ri:sun-line");
+      if (prefersDark === isDark) {
+        localStorage.setItem("hexo-color-scheme", "auto");
+      } else {
+        localStorage.setItem("hexo-color-scheme", isDark ? "dark" : "light");
+      }
+      toggleGiscusTheme();
+    }
+    $("#toggle-dark").click(toggleDark);
+    // listen dark mode change
+    window
+      .matchMedia("(prefers-color-scheme: dark)")
+      .addEventListener("change", (e) => {
+        const setting = localStorage.getItem("hexo-color-scheme") || "auto";
+        if (setting === "auto") {
+          document.documentElement.classList.toggle("dark", e.matches);
+          $("#theme-icon").attr(
+            "icon",
+            e.matches ? "ri:moon-line" : "ri:sun-line"
+          );
+          toggleGiscusTheme();
+        }
+      });
+  });
+</script>
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body class="font-sans bg-white dark:bg-zinc-900 text-gray-700 dark:text-gray-200">
+  <header class="fixed w-full px-5 py-1 z-10 backdrop-blur-xl backdrop-saturate-150 border-b border-black/5">
+  <div class="max-auto">
+    <nav class="flex items-center text-base">
+      <a href="/" class="group">
+        <h2 class="font-medium tracking-tighterp text-l p-2">
+          <img class="w-5 mr-2 inline-block transition-transform group-hover:rotate-[30deg]" id="logo" src="/images/logo.svg" alt="Seven's Blog" />
+          Seven&#39;s Blog
+        </h2>
+      </a>
+      <div id="header-title" class="opacity-0 md:ml-2 md:mt-[0.1rem] text-xs font-medium whitespace-nowrap overflow-hidden overflow-ellipsis">
+        A Comparative Analysis of Port Scanning Tool Efficacy
+      </div>
+      <div class="flex-1"></div>
+      <div class="flex items-center gap-3">
+        
+          <a class="hidden sm:flex" href="/archives">Posts</a>
+        
+        
+          
+            <a class="w-5 h-5 hidden sm:flex" title="Github" target="_blank" rel="noopener" href="https://github.com/Jluya">
+              <iconify-icon width="20" icon="ri:github-line"></iconify-icon>
+            </a>
+          
+        
+        <a class="w-5 h-5" title="toggle theme" id="toggle-dark">
+          <iconify-icon width="20" icon="" id="theme-icon"></iconify-icon>
+        </a>
+      </div>
+      <div class="flex items-center justify-center gap-3 ml-3 sm:hidden">
+        <span class="w-5 h-5" aria-hidden="true" role="img" id="open-menu">
+          <iconify-icon width="20" icon="carbon:menu" ></iconify-icon>
+        </span>
+        <span class="w-5 h-5 hidden" aria-hidden="true" role="img" id="close-menu">
+          <iconify-icon  width="20" icon="carbon:close" ></iconify-icon>
+        </span>
+      </div>
+    </nav>
+  </div>
+</header>
+<div id="menu-panel" class="h-0 overflow-hidden sm:hidden fixed left-0 right-0 top-12 bottom-0 z-10">
+  <div id="menu-content" class="relative z-20 bg-white/80 px-6 sm:px-8 py-2 backdrop-blur-xl -translate-y-full transition-transform duration-300">
+    <ul class="nav flex flex-col sm:flex-row text-sm font-medium">
+      
+        <li class="nav-portfolio sm:mx-2 border-b sm:border-0 border-black/5 last:border-0 hover:text-main">
+          <a href="/archives" class="flex h-12 sm:h-auto items-center">Posts</a>
+        </li>
+      
+    </ul>
+  </div>
+  <div class="mask bg-black/20 absolute inset-0"></div>
+</div>
+
+  <main class="p-12">
+    <!-- css -->
+
+<link rel="stylesheet" href="/lib/fancybox/fancybox.min.css">
+
+
+<link rel="stylesheet" href="/lib/tocbot/tocbot.min.css">
+
+<!-- toc -->
+
+  <!-- tocbot -->
+<nav class="post-toc toc text-sm w-48 relative top-32 right-0 opacity-70 hidden lg:block" style="position: fixed !important;"></nav>
+
+
+<section class="px-6 max-w-prose mx-auto md:px-0">
+  <!-- header -->
+  <header class="overflow-hidden pt-6 pb-6 md:pt-12">
+    <div class="pt-4 md:pt-6">
+      <h1 id="article-title" class="text-[2rem] font-bold leading-snug mb-4 md:mb-6 md:text-[2.6rem]">
+        A Comparative Analysis of Port Scanning Tool Efficacy
+      </h1>
+      <p class="mb-6">
+        
+      </p>
+      <div>
+        <section class="flex items-center gap-3 text-sm">
+          <time>2023-06-16 19:50:09</time>
+          <span class="text-gray-400">·</span>
+          <span>25 min</span>
+          <span class="text-gray-400">·</span>
+          <span>7.3k words</span>
+        </section>
+      </div>
+    </div>
+  </header>
+  <!-- content -->
+  <article class="post-content mt-10 prose dark:prose-invert post-content">
+    <h1 id="A-Comparative-Analysis-of-Port-Scanning-Tool-Efficacy"><a href="#A-Comparative-Analysis-of-Port-Scanning-Tool-Efficacy" class="headerlink" title="A  Comparative  Analysis  of  Port  Scanning  Tool  Efficacy"></a>A  Comparative  Analysis  of  Port  Scanning  Tool  Efficacy</h1><h2 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h2><p>​        端口扫描指的是对网络计算系统的系统探索。端口扫描的目标是识别活动服务和相关信息。尽管恶意行为者经常使用此技术来定位网络中的易受攻击的系统，但端口扫描也是IT专业人员用于排除网络问题和维护系统安全性的合法方法。在后一种情况下，网络安全从业者使用端口扫描编录暴露的系统，识别潜在的错误配置，或测试可能在系统上运行的控件。</p>
+<p>​        现有文献已经完整地建立了端口扫描的分类。分类法映射了扫描的类型和技术。事实上，有几个工具在文献中被反复提及，它们是Nmap、Zmap和masscan。此外，多个工具的存在表明端口扫描器与目标系统的交互方式影响工具的输出。换句话说，各种工具可能不会表现出相同的行为或产生相同的输出。然而，迄今为止还没有对这些流行工具的功效进行统一、严谨的量化研究。因此，我们使用比较实验协议来测量Nmap、Zmap和masscan的准确性、误报率、漏报率和效率。结果显示，端口扫描器在总体性能方面没有差异。然而，结果揭示了效率上的统计显著差异。</p>
+<p>​        这些信息可以用来指导基于特定需求和要求选择端口扫描工具。此外，对于研究人员来说，这些结果也可能为开发新的端口扫描工具提供未来工作的方向。</p>
+<p><strong>关键词：</strong>端口扫描；网络安全；实验；工具和技术；功效</p>
+<h2 id="1-简介"><a href="#1-简介" class="headerlink" title="1. 简介"></a>1. 简介</h2><p>​       许多网络安全工具和技术有两个用途。一方面，这些工具和技术可以用于验证系统或网络配置、映射服务和体系结构，以及帮助故障排除。另一方面，恶意行为者也可以使用相同的方法来发现端点并提取有价值的信息，并提供有价值的信息以供利用。端口扫描仪牢牢地存在于这中双重用途的工具中。</p>
+<p>​        端口扫描器作为一种工具，利用RFC标准与计算终端点交互。在这里需要理解两点。首先，这种交互受RFC标准的管理。例如，RFC 1180是TCP&#x2F;IP的标准，它作为相关互联网协议的基本结构。端口扫描器广泛使用的一个协议就是TCP。端口扫描的技术层次利用这些标准的各种元素来枚举终端点和运行在其上的服务。更具体地说，端口扫描器可以识别开放的端口，指纹识别服务和操作系统信息，并评估防火墙配置。大多数技术利用TCP标志（例如SYN、ACK、FIN）来引发终端点响应。虽然也有一些技术使用UDP或IP。</p>
+<p>​        尽管端口扫描的文献基础健全，但很少有对端口扫描器效能的研究。为此，我们发现在1994年至2022年间的12项研究中，只有两项进行了定量评估。此外，没有研究对端口扫描器进行准确性、误报率、漏报率和效率（即功效）的比较分析。这限制了研究创新，并使从业者缺乏明确的证据，以确定哪种工具最适合特定的操作条件。</p>
+<p>​        因此，本研究的目的是定量地比较三种端口扫描仪的有效性。我们使用实验设计来生成扫描指标，在扫描期间收集系统利用率数据，并进行统计分析。这项工作对网络安全从业人员具有实际意义。由于端口扫描是网络防御的合法实践，选择一个具有少量或没有误报和漏报的准确工具可能对网络和系统操作员来说非常重要。与此同时，对于研究人员来说，还存在许多重要的研究用例。了解现有的端口扫描器可能会导致开发新的端口扫描算法和原型。此外，相同的理解可能可以指导开发健壮的端口扫描检测机制。</p>
+<h2 id="2-相关工作"><a href="#2-相关工作" class="headerlink" title="2. 相关工作"></a>2. 相关工作</h2><p>​        端口扫描的文献背景并不广泛。然而，现有的研究已经建立了一个强大的概念框架来定位我们的工作。具体来说，由于端口扫描技术本质上是技术性的，我们需要校准重要的术语和技术细节。此外，了解存在哪些有效数据是重要的基础材料。</p>
+<h3 id="2-1-端口扫描基础"><a href="#2-1-端口扫描基础" class="headerlink" title="2.1  端口扫描基础"></a>2.1  端口扫描基础</h3><p>​        端口扫描这个术语起源于计算机网络的早期，可以追溯到20世纪80年代末和90年代初。随着Internet的扩展和普及，网络管理员和安全专业人员需要工具来深入了解其网络的状态。对于这些专业人员来说，识别有效的网络服务以及主机上打开和关闭的端口是一项至关重要的任务。这个过程后来被称为端口扫描，并从此成为维护网络安全的重要技术。</p>
+<p>​        端口扫描利用TCP&#x2F;IP功能来识别网络中的计算系统。由于网络协议使用不同的端口，因此对广泛的端口进行彻底扫描对于收集到全面的信息至关重要。支持扫描的最大端口数为65535，分为三类：公认端口(0 ~ 1023)、注册端口(1024 ~ 49151)、随机动态端口或私有端口(49152 ~ 65535)。</p>
+<p>​        为了说明问题，让我们考虑基于TCP的端口扫描。作为面向连接的通信协议，TCP通信依赖于初始的四次握手（算法1）。在端口扫描的上下文中，步骤2中的服务器响应表示（a）终端点在线，并且（b）端口上有一个活动服务可用。此外，应该注意交换中出现的TCP标志(SYN和ACK)。客户端和服务器使用这些标志来控制网络交换。</p>
+<table>
+<thead>
+<tr>
+<th>Algorithm 1 TCP Four-Way Handshake</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Client → Server: SYN (Seq&#x3D;x)</td>
+</tr>
+<tr>
+<td>Server → Client: SYN (Seq&#x3D;y, Ack&#x3D;x+1)</td>
+</tr>
+<tr>
+<td>Client → Server: ACK (Seq&#x3D;a+1, Ack&#x3D;b+1)</td>
+</tr>
+<tr>
+<td>Server → Client: ACK (Seq&#x3D;b+1, Ack&#x3D;a+1)</td>
+</tr>
+</tbody></table>
+<p>​        TCP除了是一种传输方式，也是一种端口扫描方式。虽然存在一种使用完整握手的扫描技术，但大多数技术要么操作握手序列（即发送早期连接重置），要么操作TCP标志，或者利用其他包字段以意想不到的方式。尽管TCP握手基于SYN和ACK，但还有四个附加标志可用：URG、PSH、RST和FIN。此外，片段偏移和选项也可进行修改。标准在IPv4数据包结构中定义了所有这些内容（图1）。</p>
+<p><img src="D:\study\program\blog\source_posts\Comparative\Figure_1.png" alt="Figure_1"></p>
+<p>图1：IPv4数据包中的字段及其相对大小</p>
+<h3 id="2-2-端口扫描概念框架"><a href="#2-2-端口扫描概念框架" class="headerlink" title="2.2  端口扫描概念框架"></a>2.2  端口扫描概念框架</h3><p>​        端口扫描由Fyodor在文献中广为人知。这项工作介绍了自动网络映射的概念，包括一种识别远程主机操作系统的方法。Nmap工具向特定端口发送TCP&#x2F;IP探测并分析响应。这篇论文解释了TCP&#x2F;IP栈的行为，以及对不同类型探测的响应，比如初始序列号(ISN)和TCP报头中的选项，如何被用来确定服务状态和操作系统。该工作还描述了该技术对指纹端点的使用以及端口扫描的挑战和局限性。Nmap在整个端口扫描文学、流行的网络安全文化和各种媒体输出中都有很大的特点。</p>
+<p>​        现在，Fyodor至少在概念上基于Comer和Lin的早期工作。作者进行了一系列实验，以测量TCP实现的性能。实验涉及向目标系统发送各种TCP探测，并观察响应。如果不是形式上的话，这种主动探测就是端口扫描功能。此外，一个关键的收获是主动探测不对目标端点做任何假设。这是来自端点的响应揭示所有信息的想法。</p>
+<p>​        De Vivo等人从Fyodor和其他几篇文章提供的端口扫描基础中进行了概括。De Vivo等人的重要性来自于应用于端口扫描技术和程序的严格分类。该论文描述了不同类型的端口扫描，例如TCP连接扫描和SYN扫描，这是经典的扫描方式。这与间接和隐蔽扫描有关。后者也称为FIN、XMAS或NULL扫描。前者通过从僵尸端点反弹扫描来实现。该工作继续描述了扫描技术。这包括诱饵扫描、分段扫描、协调或分布式扫描、UDP扫描和ICMP扫描。</p>
+<p>​        Staniford等人在开发扫描检测机制的过程中详细介绍了几个端口扫描概念。足迹包括套接字的网络概念。也就是说，一个IP地址与一个TCP或UDP端口配对。然后，作者区分了这个和端口扫描脚本。在这里，脚本是与探测足迹相关联的时间。足迹和脚本共同汇聚成Staniford等人所称的水平扫描的主动探测技术。水平扫描，或者在网络段中探测单个服务，是后来的工作中接受的概念。</p>
+<p>​        Barnett等人提出了一种对网络扫描技术进行分类的系统，这对于建立这些方法及其应用的结构化和全面分类具有重要意义。作者提出了一种分类法，根据与目标系统的交互程度、收集的信息和扫描的目的对网络扫描技术进行分类。该分类法建立在De Vivo等人的工作基础上，同时还纳入了其他类型和技术。为此，作者采用了多方面的方法，包括使用Nmap在实验室环境中生成扫描流量。此外，Barnett等人建立了一个网络望远镜来捕捉野外的流量。</p>
+<p>​        作者确定了一个网络扫描技术分类法，包括七种不同的扫描，分为三个级别。分类法的根节点是TCP&#x2F;IP扫描，其后是第2层、第3层、扫描速度和扫描分布。值得注意的是，扫描分布扩展了，将垂直扫描的概念添加到水平扫描中。第3层类别进一步分为ICMP、TCP和UDP。TCP类别包括使用SYN、ACK和FIN标志的扫描。扫描速度分为三个类别，即慢速、中速和快速，而扫描分布由源和目的地之间的关系定义，例如一对一、一对多、多对一和多对多。</p>
+<p>​        Bhuyan等人通过扩展De Vivo等人、Staniford等人和Fyodor的先前工作，描述了端口扫描的一般方法。作者在单源和分布式端口扫描之间进行了重要区分。从组织结构上看，单源扫描包括类型(垂直扫描、水平扫描、频闪扫描和块扫描)、端口(部分或全部扫描、单个扫描、多个扫描和全部扫描)和目标(单个、多个IP扫描、多个IP扫描和多个IP扫描)。分布式扫描是多对一或多对多。</p>
+<p>​        Bhuyan等人在详细介绍端口扫描技术时，包括源和目标TCP&#x2F;IP交互，做出了额外的贡献。在这样做的过程中，作者展示了TCP&#x2F;IP标准如何在端口扫描中被利用。这意味着，鉴于这些标准所定义的基本规则，端口扫描枚举是不可避免的。这一贡献的综合可见于图2。</p>
+<p><img src="D:\study\program\blog\source_posts\Comparative\Figure_2.png" alt="Figure_2"></p>
+<p>图2：各种端口扫描技术和相关的协议交互。</p>
+<p>​        同样地，El-Nazeer和Daimi评估了网络端口扫描工具，旨在确定网络管理员用于保护其网络的最佳工具。作者使用比较分析研究方法评估了八个端口扫描工具。Nmap和unicornscan是端口扫描器评估集中的工具，并在后续研究中反复出现。El-Nazeer和Daimi描述了15个评估标准，从执行SYN扫描的能力到工具是否免费和开源等。他们对端口扫描器进行了13个标准的实验室测试，并使用文档来推导另外两个标准的值。有点令人困惑的是，鉴于实验室测试，缺乏定量指标。在这些数据的替代品中，作者定性地宣布Nmap具有最强大的功能，是研究中检查的端口扫描器中最好的。</p>
+<p>​        Bou等人对用于识别网络不同特征的各种类型的网络扫描技术进行了详细的研究。作者将端口扫描技术分为两大类：被动和主动。被动扫描技术涉及监听网络流量以收集有关目标网络的信息，而不发送任何数据包。另一方面，主动扫描技术涉及向目标主机发送数据包以引发响应，这可以帮助确定主机的特征并识别漏洞。后者明确回顾了Comer和Lin，也隐含了Staniford等人的研究。</p>
+<p>​       此外，Bou等人在De Vivo等人和Barnett等人提供的组织结构基础上又增加了一项功能但在语义上有所不同。例如，De Vivo等人的经典扫描、间接扫描和隐身扫描在Bou等人提供的主动扫描和被动扫描的性质下绘制了地图。同样，由围绕扫描器和目标之间的关系(例如一对多)开发的语义也在Bou等人的研究中得到了解决。Bou等人也提出了一种策略，作为对扫描器和目标之间的方向关系进行分类的方法。Bou等人将方法定义为目标和方法。前者具有广泛的目标，后者具有特定目标。方法包括单一来源或分布。然后，技术包括打开、半打开、隐身(SYN、ACK、IDLE、FIN、XMAS、NULL、ACK Window和Fragmentation)、扫描(ICMP、SYN)和其他(FTP Bounce、UDP、IP和RPC)。         </p>
+<p>​        Kumar和Sudarson以及Zhang等人偏离了先前的工作主体，因为他们都只关注单端口扫描概念。两项研究还展示了一个原始的端口扫描工具。然而，与De Vivo等人和Barnett等人类似，Kumar和Sudarson提供的是技术分析，而不是一般原则。为此，Kumar和Sudarson探索了一种新的UDP端口扫描机制。目标是提高扫描仪的性能(即完成扫描的时间)。Zhang等人引入了SYN扫描的修改，绕过防火墙过滤器。在文献的背景下，作者提出了一个严格的实验和协议来检验假设。然而，这两项研究都没有测量准确性、误报率、漏报率或效率。</p>
+<h3 id="2-3-端口扫描器的有效性"><a href="#2-3-端口扫描器的有效性" class="headerlink" title="2.3  端口扫描器的有效性"></a>2.3  端口扫描器的有效性</h3><p>​        分类法和其他知识组织模式对科学领域的发展至关重要。同时，这种分类法的意义仅限于研究人员。实际用例需要应用实验和分析。幸运的是，一些研究认识到需要在未来的工作中更详细地展示端口扫描结果，例如准确性。</p>
+<p>​        Im等人分析了网络扫描的精度和性能，特别是Nmap。Im等人将准确性定义为正确识别目标操作系统的能力。然后，作者采用了一种实验设计，在扫描40多个运行Windows和GNU&#x2F;Linux的网络设备的实验室网络环境时捕获数据。总的来说，他们发现Nmap的扫描精度为27.5%，而在防火墙激活的情况下，针对Windows 7 SP1的扫描精度为47.8%。在没有防火墙的情况下，扫描准确度和精度分别跃升至95%和100%。对于GNU&#x2F;Linux，在防火墙主动过滤流量的情况下，Nmap的准确度和精度为零。在没有防火墙的情况下，Nmap产生了45%的扫描精度和100%的精度</p>
+<p>​        虽然这些结果对该领域做出了重要贡献，但更引人注目的是捕获的纳真(TP)、误报(FP)和漏报(FN)的频率。这些指标是由Im等人在两个维度上收集的：Windows 7 SP1和GNU&#x2F;Linux以及防火墙与无防火墙。对于Windows目标，Nmap在激活防火墙的情况下生成11个TP、12个FP和17个FN，在没有防火墙的情况下生成38个TP、0个FP和2个FN。对于GNU&#x2F;Linux，当防火墙处于活动状态时，Nmap具有0 TP和40 FN。在没有防火墙的情况下，Nmap生成了18个TP、0个FP和2个FN。</p>
+<p>​        Yuan等人发现Nmap、Zmap、masscan和unicornscan都存在缺陷，不适合实际应用。因此，作者在特定用例的约束下开发了一个自定义端口扫描解决方案。然后，在运行其他端口扫描程序的同时，针对生产网络运行定制端口扫描程序。结果包括每个扫描仪的性能(与斯坦福等人脚本概念相同的指标)，并在垂直和水平模式下进行重复实验试验。总体而言，数据表明Yuan等人开发的自定义端口扫描仪明显快于其他工具。然而，作者并没有指出他们的解决方案是否有显著不同的误报率、漏报率或效率。</p>
+<h2 id="3-方法"><a href="#3-方法" class="headerlink" title="3. 方法"></a>3. 方法</h2><p>​        考虑到相关工作的特点和差距，我们对流行端口扫描工具之间存在的潜在定量差异产生了兴趣。McGeoch认为，这是计算机科学及相关领域(如网络安全)应用实验的常用方法。从这个角度来看，我们通过在本研究中提出一个单一的研究问题来构建研究框架。研究的问题是，在进行相同类型的端口扫描时，Nmap、ZMap和masscan在多大程度上表现出不同的准确性、误报率、漏报率以及系统利用率效率?</p>
+<p>​        为了得到一个可能的答案，我们选择了对比实验设计。实验采用一组端口扫描工具(Nmap, Zmap, masscan)作为自变量。因变量为准确性、误报率、漏报率和效率。此外，我们建立了一套广泛的控制变量，如(a)扫描系统，(b)目标端点，(c)目标端点上的活动服务。这些将在实验环境一节中进一步详细说明。最后，我们将研究问题和变量识别为一组假设，如下所示:</p>
+<p>零假设(H0)表示：<em>端口扫描工具在准确性、误报率、漏报率方面没有统计学上的显著差异。</em></p>
+<p>另一个假设H1表示为：<em>端口扫描工具在准确性、误报率、漏报率方面具有统计学上的显著差异。</em></p>
+<p>​        我们将上述情况称为通用性能假设。此外，我们建立了一对效率假说：</p>
+<p>零假设(H0)表示为：<em>端口扫描工具在CPU或RAM系统利用率和扫描运行时方面没有统计学上的显著差异。</em></p>
+<p>另一个假设H1表示为：<em>端口扫描工具在CPU或RAM系统利用率和扫描运行时间方面表现出统计学上显著的差异。</em></p>
+<h3 id="3-1-实验环境"><a href="#3-1-实验环境" class="headerlink" title="3.1  实验环境"></a>3.1  实验环境</h3><p>​        实验环境包括一个端口扫描虚拟机，一组20个端点目标虚拟机，所有这些虚拟机都通过1GBe物理局域网相互连接。虚拟化主机配备了AMD Ryzen 9 5900X处理器和128GB RAM。主机操作系统为Ubuntu Desktop 22.04.1 LTS。每个虚拟机，扫描机和端点目标都配置了一个vCPU、2GB RAM和一个Intel PRO 1000MT虚拟网络接口。所有虚拟机都运行Ubuntu Server 22.04.02 LTS。</p>
+<p>​        虚拟机网络接口配置为桥接模式，但使用静态IP地址。此外，我们将物理局域网段配置为C类网络，扫描主机位于192.168.100.10，端点目标占据192.168.100.101到192.168.100.120。我们将虚拟化主机连接到一个空气隔离的Cisco 3560交换机，该交换机在实验C类子网中运行一个三层接口。</p>
+<h3 id="3-2-主机和服务"><a href="#3-2-主机和服务" class="headerlink" title="3.2  主机和服务"></a>3.2  主机和服务</h3><p>​        端口扫描还需要枚举端口。因此，我们在20个扫描目标上安装了六个服务。所有目标都将SSH作为控制基准运行。其余五个服务分别分布在子组中，详见表1。</p>
+<p>表1：扫描目标和服务列表</p>
+<table>
+<thead>
+<tr>
+<th>Hosts              Service Group            Service</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>.101 - .110             80&#x2F;tcp                       HTTP</td>
+</tr>
+<tr>
+<td>.105 - .114              23&#x2F;tcp                      Telnet</td>
+</tr>
+<tr>
+<td>.108 - .115              21&#x2F;tcp                        FTP</td>
+</tr>
+<tr>
+<td>.111 - .120        111&#x2F;tcp, 2049&#x2F;tcp             NFS</td>
+</tr>
+<tr>
+<td>.101 - .120               22&#x2F;tcp                       SSH</td>
+</tr>
+</tbody></table>
+<p>​        这种实验架构的意图是促进横向（跨主机集）和纵向（跨每个主机的一组服务）扫描。扫描主机是扫描的单一来源，因此除安装必要的扫描器软件外，不需要进行其他配置。</p>
+<h3 id="3-3-实验程序"><a href="#3-3-实验程序" class="headerlink" title="3.3  实验程序"></a>3.3  实验程序</h3><p>​        我们制定了一个实验过程。虽然不是直接控制，但采用逐步方法可以确保在三次扫描试验中保持一致性。在启动扫描主机和扫描目标后，我们在扫描主机上捕获了CPU和RAM基线的基准值。接下来，我们对实验子网执行了一个Nmap SYN扫描。扫描结果以及CPU和RAM利用率保存在扫描主机上的文件中。然后，我们重置所有系统以清除缓存和缓冲区。从运行端口扫描到重置系统的步骤重复了Zmap和masscan。最后，我们通过USB从扫描主机提取扫描文件和利用率文件。</p>
+<h3 id="3-4-数据分析"><a href="#3-4-数据分析" class="headerlink" title="3.4  数据分析"></a>3.4  数据分析</h3><p>​        我们使用统计方法分析收集的扫描文件和利用率文件，以确定工具在准确性、误报率、漏报率和（分别）效率方面是否存在显著差异。首先，我们计算了每个扫描下识别变量的统计平均值。然后，我们进行了方差分析检验，以确定结果之间是否存在差异，如果存在，则进行随机测试。</p>
+<h2 id="4-结果"><a href="#4-结果" class="headerlink" title="4. 结果"></a>4. 结果</h2><p>​        我们将数据分析的结果分为两部分：通用性能和效率。每个部分都包含数据的描述性分类，以及适当时的推断统计。</p>
+<h3 id="4-1-通用性能"><a href="#4-1-通用性能" class="headerlink" title="4.1  通用性能"></a>4.1  通用性能</h3><p>​        通用性能捕获给定端口扫描器识别主机和服务的情况。识别所有主机(N &#x3D; 20)和所有服务(N &#x3D; 120)将是一个极端。相反的极端是识别零主机，从而零服务。在这两个极端之间可能存在多种二维向量。</p>
+<p>表2：三个端口扫描器的通用性能</p>
+<table>
+<thead>
+<tr>
+<th>N               Accuracy          FP            FN</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Nmap           20 (120)            100%               0              0</td>
+</tr>
+<tr>
+<td>Zmap            20 (120)            100%              0              0</td>
+</tr>
+<tr>
+<td>masscan       20 (120)            100%              0              0</td>
+</tr>
+</tbody></table>
+<p>​        结果显示，所有三个端口扫描器都正确识别了完整的电池主机和服务(表2)。此外，没有端口扫描器检测到实验配置中不存在的主机或服务。考虑到数据的极端条件，方差分析是多余的，因为扫描仪之间缺乏差异是初步的。因此，在这些条件下，我们接受零假设。</p>
+<h3 id="4-2-效率"><a href="#4-2-效率" class="headerlink" title="4.2  效率"></a>4.2  效率</h3><p>​        我们在每次扫描活动之前对扫描主机的CPU和RAM利用率进行快照。系统显示在用户进程上花费了0%的时间，并且每个快照中有1241652 K的空闲内存，大约1230.7兆字节。回想一下，虚拟机有一个单独的vCPU和2GB的RAM(即2048兆字节)。这样的基线表明系统处于适当的静态状态，系统开销为8173兆字节。</p>
+<p>​         在三次端口扫描器试验期间，我们通过每隔三秒将vmstat输出写入文件来捕获效率数据。计算了用户进程CPU元素和空闲RAM元素的平均值(M)(表3)。扫描运行时间(以秒为单位)通过每个端口扫描试验的开始和结束时间戳之间的差来计算。</p>
+<p>表3：端口扫描仪CPU和RAM系统利用率和扫描运行时间</p>
+<table>
+<thead>
+<tr>
+<th>CPU               RAM           Runtime</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Nmap                 1              1230656            26.68</td>
+</tr>
+<tr>
+<td>Zmap               1.11             988040              644</td>
+</tr>
+<tr>
+<td>masscan             0               978492                2</td>
+</tr>
+</tbody></table>
+<p>​        不同于可观察到的相同的端口扫描器的一般性能，效率测量显示可变性。因此，我们按计划进行了方差分析。统计数据显示扫描仪之间的效率存在差异(F (df &#x3D; 2组之间，df &#x3D; 6组内)，F &#x3D; 153.9721, p &#x3D; 0.000006981)。Tukey’s HSD检验证实，各变量的均值差异显著，效应量较大(7.16)。在这些条件下，我们拒绝零假设。</p>
+<h2 id="5-总结"><a href="#5-总结" class="headerlink" title="5. 总结"></a>5. 总结</h2><p>​        端口扫描在网络安全防御中具有至关重要的作用。该技术允许枚举网络上的计算系统，以及这些端点上的活动服务。现有文献提供了端口扫描工具、扫描类型和扫描技术的健壮分类法。然而，还没有人以统一、严格的方式对这些流行工具的功效进行量化。本研究试图填补这一空白。为此，我们通过实验比较了三种流行的端口扫描工具——Nmap、masscan和Zmap的有效性。具体来说，我们使用水平和垂直相结合的技术测量了单源SYN类型端口扫描期间的准确性、假阳性、假阴性和效率。实验由一台虚拟扫描主机和20个虚拟扫描目标组成。扫描目标暴露了六个服务的混合物:ftp、SSH、Telnet、HTTP和两个用于NFS的端口。我们收集了每次扫描试验的数据和每次扫描期间扫描主机的数据。结果表明，在准确识别目标方面，不同工具之间没有差异。然而，在端口扫描器效率的情况下，统计结果显示出明显的差异。</p>
+<p>​        研究结果对研究人员和从业人员都有启示意义。一方面，研究人员和从业人员可能会将端口扫描工具之间的准确性差异不足视为利用TCP&#x2F;IP协议标准的算法是稳定的信号。此外，现有的实现(如Nmap、Zmap和masscan)可以作为新工具开发的基准。未来的工作可能会转向未开发的算法领域，以扩大扫描仪的稳定性，同时减少技术检测。另一方面，端口扫描仪效率之间的显著差异为基于研究和实用创新描绘了一条清晰的前进道路。其中的另一个想法可能是扩大效率的概念，包括绿色计算关键绩效指标。</p>
+<p>​        当然，没有任何建议是没有警告的。例如，虽然Nmap可以使用多种扫描技术，但本实验中使用的其他工具只使用SYN扫描。因此，对比分析只比较了使用该技术的扫描结果。这样做限制了结果的通用性，因为不能评估其他类型的扫描(即ACK、FIN、XMAS等)。进一步考虑可推广的结果，我们假设Nmap、Zmap和mass可以以足够相似的方式实现SYN扫描，以便进行比较分析。由于SYN扫描遵循标准的扫描仪到客户机的交互模式，因此可以合理地得出结论，SYN扫描实现或多或少是相同的。最后，如果协议级别的深入技术分析证实了这种相互作用，那么未来的工作可能是有益的。</p>
+<p>​        关于这一点，我们在实验中确实观察到一个异常。我们发现Zmap和masscan在一个封闭的仅主机的VMWare网络上不能像预期的那样工作。今后的工作应对此进行更深入的探讨。目前，我们观察到扫描数据包离开扫描主机以及被扫描目标接收。这是通过tcpdump数据包捕获确认的。我们最好的推测是在端口扫描器超时窗口之外响应了扫描目标。值得注意的是，Nmap在桥接LAN和封闭主机配置上的工作方式相同。未来的工作可能需要探索这一现象的技术基础。</p>
+
+  </article>
+  <!-- tag -->
+  <div class="mt-12 pt-6 border-t border-gray-200">
+    
+  </div>
+  <!-- prev and next -->
+  <div class="flex justify-between mt-12 pt-6 border-t border-gray-200">
+    <div>
+      
+    </div>
+    <div>
+      
+        <a href="/2023/06/15/ZMap%EF%BC%9AFast-Internet-wide-Scanning-and-Its-Security-Applications/" class="text-sm text-gray-400 hover:text-gray-500 flex justify-center">
+          
+          <iconify-icon width="20" icon="ri:arrow-right-s-line" data-inline="false"></iconify-icon>
+        </a>
+      
+    </div>
+  </div>
+  <!-- comment -->
+  <div class="article-comments mt-12">
+    
+
+  </div>
+</section>
+<!-- js inspect -->
+
+<script src="/lib/clipboard.min.js"></script>
+
+
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": {
+        preferredFont: "TeX",
+        availableFonts: ["STIX","TeX"],
+        linebreaks: { automatic:true },
+        EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50)
+    },
+    tex2jax: {
+        inlineMath: [ ["$", "$"], ["\\(","\\)"] ],
+        processEscapes: true,
+        ignoreClass: "tex2jax_ignore|dno",
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    },
+    TeX: {
+        equationNumbers: { autoNumber: "AMS" },
+        noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } },
+        Macros: { href: "{}" }
+    },
+    messageStyle: "none"
+  });
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>
+  $(document).ready(() => {
+    const maraidConfig = {
+      theme: "default",
+      logLevel: 3,
+      flowchart: { curve: "linear" },
+      gantt: { axisFormat: "%m/%d/%Y" },
+      sequence: { actorMargin: 50 },
+    };
+    mermaid.initialize(maraidConfig);
+  });
+</script>
+
+
+
+<script src="/lib/fancybox/fancybox.umd.min.js"></script>
+
+<script>
+  $(document).ready(() => {
+    $('.post-content').each(function(i){
+      $(this).find('img').each(function(){
+        if ($(this).parent().hasClass('fancybox') || $(this).parent().is('a')) return;
+        var alt = this.alt;
+        if (alt) $(this).after('<span class="fancybox-alt">' + alt + '</span>');
+        $(this).wrap('<a class="fancybox-img" href="' + this.src + '" data-fancybox=\"gallery\" data-caption="' + alt + '"></a>')
+      });
+      $(this).find('.fancybox').each(function(){
+        $(this).attr('rel', 'article' + i);
+      });
+    });
+
+    Fancybox.bind('[data-fancybox="gallery"]', {
+        // options
+    })
+  })
+</script>
+
+<!-- tocbot begin -->
+
+<script src="/lib/tocbot/tocbot.min.js"></script>
+
+<script>
+  $(document).ready(() => {
+      tocbot.init({
+        // Where to render the table of contents.
+        tocSelector: '.post-toc',
+        // Where to grab the headings to build the table of contents.
+        contentSelector: '.post-content',
+        // Which headings to grab inside of the contentSelector element.
+        headingSelector: 'h1, h2, h3',
+        // For headings inside relative or absolute positioned containers within content.
+        hasInnerContainers: true,
+    });
+  })
+</script>
+<!-- tocbot end -->
+
+
+  </main>
+  <footer class="flex flex-col h-40 items-center justify-center text-gray-400 text-sm">
+  <!-- busuanzi -->
+  
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<!-- Busuanzi Analytics -->
+<div class="flex items-center gap-2">
+  <span>Visitor Count</span>
+  <span id="busuanzi_value_site_uv"></span>
+  <span>Totalview</span>
+  <span id="busuanzi_value_site_pv"></span>
+</div>
+<!-- End Busuanzi Analytics -->
+
+
+  <!-- copyright -->
+  <div class="flex items-center gap-2">
+    <span>© 2022</span>
+    <iconify-icon width="18" icon="emojione-monotone:maple-leaf" ></iconify-icon>
+    <a href="https://github.com/xbmlz" target="_blank" rel="noopener noreferrer">xbmlz</a>
+  </div>
+  <!-- powered by -->
+  <div class="flex items-center gap-2">
+    <span>Powered by</span>
+    <a href="https://hexo.io/" target="_blank" rel="noopener noreferrer">Hexo</a>
+    <span>&</span>
+    <a href="https://github.com/xbmlz/hexo-theme-maple" target="_blank" rel="noopener noreferrer">Maple</a>
+  </div>
+
+</footer>
+
+  <iconify-icon class="fixed right-4 bottom-10 z-100 opacity-0" width="24" icon="ion:arrow-up-c" id="go-top"></iconify-icon>
+  
+<script src="/js/main.js"></script>
+
+
+  <script>
+    $(document).ready(function () {
+      const mapleCount = "10";
+      const speed = "0.5";
+      const mapleEl = document.getElementById("maple");
+      const maples = Array.from({ length: mapleCount }).map(() => {
+        const maple = document.createElement("div");
+        const scale = Math.random() * 0.5 + 0.5;
+        const offset = Math.random() * 2 - 1;
+        const x = Math.random() * mapleEl.clientWidth;
+        const y = -Math.random() * mapleEl.clientHeight;
+        const duration = 10 / speed;
+        const delay = -duration;
+        maple.className = "maple";
+        maple.style.width = `${24 * scale}px`;
+        maple.style.height = `${24 * scale}px`;
+        maple.style.left = `${x}px`;
+        maple.style.top = `${y}px`;
+        maple.style.setProperty("--maple-fall-offset", offset);
+        maple.style.setProperty("--maple-fall-height", `${Math.abs(y) + mapleEl.clientHeight}px`);
+        maple.style.animation = `fall ${duration}s linear infinite`;
+        maple.style.animationDelay = `${delay}s`;
+        mapleEl.appendChild(maple)
+        return maple
+      })
+    });
+  </script>
+  
+
+
+  <div class="w-screen h-screen -z-999" id="maple"></div>
+</body>
+
+</html>
